@@ -39,6 +39,8 @@ async def watch(host):
                                   "payload": {}}))
         async for raw in ws:
             msg = json.loads(raw)
+            if msg.get("id") == "launch" and msg.get("type") == "error":
+                log("launch failed (is the launcher installed?):", msg.get("error"))
             if msg.get("id") != "fg":
                 continue
             app = msg.get("payload", {}).get("appId")
