@@ -11,8 +11,10 @@ continuent de fonctionner, et supprimer l'app Developer Mode retire tout.
 ## Ce que fait l'add-on
 
 - Lit les apps, icônes et entrées HDMI de la TV, empaquette le launcher et l'installe.
-- Surveille l'app au premier plan : dès que l'accueil LG apparaît, il ouvre le launcher par-dessus.
-  Appuyer deux fois sur Home en moins de 3 s reste sur l'accueil LG (pour ses menus).
+- Surveille les apps de la TV : dès que l'accueil LG démarre, il ouvre le launcher par-dessus.
+  Il écoute les événements de cycle de vie des apps (plus tôt) quand la TV les expose, sinon l'app
+  au premier plan ; le log indique lequel a servi (`via life event …` ou `via foreground`).
+  Un second appui sur Home, entre 1 et 3 s après le premier, reste sur l'accueil LG (pour ses menus).
 - Prolonge la session Developer Mode chaque semaine (sinon elle expire après 1000 h), de préférence
   entre 3 h et 5 h du matin.
 

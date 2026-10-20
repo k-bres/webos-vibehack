@@ -20,6 +20,10 @@ import lgtv
 LAUNCHER = "com.gathin.tvhome"
 LG_HOME = "com.webos.app.home"
 ESCAPE_SECONDS = 3.0
+# One Home press can report both signals (life event, then foreground): treat them as one press.
+SAME_PRESS_SECONDS = 1.0
+# App life events that come before LG's home is on screen, when the TV exposes them.
+LIFE_EVENTS = ("splash", "launch", "foreground")
 
 
 def log(*args):
@@ -29,21 +33,41 @@ def log(*args):
 async def watch(host):
     ws = await lgtv.session(host, ping_interval=10, ping_timeout=10)
     log("connected to", host)
-    last_redirect = 0.0
+    last_redirect = last_home = 0.0
     try:
+        # Life events fire as LG's home starts, before it is on screen; the foreground app only once
+        # it shows. Not every firmware lets the remote service read life events: then the error is
+        # logged and the foreground subscription alone does the job.
+        await ws.send(json.dumps({"type": "subscribe", "id": "life",
+                                  "uri": "ssap://com.webos.applicationManager/getAppLifeEvents",
+                                  "payload": {}}))
         await ws.send(json.dumps({"type": "subscribe", "id": "fg",
                                   "uri": "ssap://com.webos.applicationManager/getForegroundAppInfo",
                                   "payload": {}}))
         async for raw in ws:
             msg = json.loads(raw)
-            if msg.get("id") == "launch" and msg.get("type") == "error":
-                log("launch failed (is the launcher installed?):", msg.get("error"))
-            if msg.get("id") != "fg":
+            rid, payload = msg.get("id"), msg.get("payload", {})
+            if msg.get("type") == "error":
+                if rid == "launch":
+                    log("launch failed (is the launcher installed?):", msg.get("error"))
+                elif rid == "life":
+                    log("app life events unavailable, using the foreground app only:", msg.get("error"))
                 continue
-            app = msg.get("payload", {}).get("appId")
-            if app != LG_HOME:
+            if rid == "life":
+                if payload.get("appId") != LG_HOME or payload.get("event") not in LIFE_EVENTS:
+                    continue
+                via = "life event " + payload["event"]
+            elif rid == "fg":
+                if payload.get("appId") != LG_HOME:
+                    continue
+                via = "foreground"
+            else:
                 continue
+
             now = time.monotonic()
+            if now - last_home < SAME_PRESS_SECONDS:
+                continue
+            last_home = now
             if now - last_redirect < ESCAPE_SECONDS:
                 log("Home pressed twice: staying on LG home")
                 last_redirect = 0.0
@@ -51,7 +75,7 @@ async def watch(host):
             last_redirect = now
             await ws.send(json.dumps({"type": "request", "id": "launch", "uri": "ssap://system.launcher/launch",
                                       "payload": {"id": LAUNCHER}}))
-            log("LG home -> launcher")
+            log("LG home -> launcher, via", via)
     finally:
         await ws.close()
 
