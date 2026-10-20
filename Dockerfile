@@ -1,5 +1,5 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
+ARG BUILD_ARCH=amd64
+FROM ghcr.io/home-assistant/${BUILD_ARCH}-base:latest
 
 RUN apk add --no-cache python3 py3-websockets nodejs npm \
  && npm install -g @webos-tools/cli@3.2.6
