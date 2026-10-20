@@ -145,14 +145,14 @@ body.scrolled header {
 /* The tvOS lighter band behind the dock row. */
 #dockBand {
   position: absolute;
-  border-radius: 52px;
+  border-radius: calc(var(--tile-r, 32px) + 20px);
   background: #141416;
   border: 2px solid rgba(255, 255, 255, 0.12);
 }
 
 .item {
   position: absolute;
-  width: 360px;
+  width: var(--tile-w, 360px);
   opacity: 0;
   transform: translateY(24px);
   transition: opacity 400ms ease, transform 400ms cubic-bezier(0.2, 0.8, 0.3, 1),
@@ -180,9 +180,9 @@ body.editing #glass { opacity: 0 !important; }
 
 .card {
   position: relative;
-  width: 360px;
-  height: 202px;
-  border-radius: 32px;
+  width: var(--tile-w, 360px);
+  height: var(--tile-h, 202px);
+  border-radius: var(--tile-r, 32px);
   overflow: hidden;
   background: #1c1c1e;
   transition: transform 180ms ease;
@@ -193,7 +193,7 @@ body.editing #glass { opacity: 0 !important; }
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 32px;
+  border-radius: var(--tile-r, 32px);
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
@@ -240,7 +240,7 @@ body.editing #glass { opacity: 0 !important; }
   position: absolute;
   left: 0;
   top: 0;
-  border-radius: 47px;
+  border-radius: calc(var(--tile-r, 32px) * 1.1 + 12px);
   border: 3px solid rgba(255, 255, 255, 0.8);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.07));
   box-shadow: 0 0 4px 2px rgba(255, 255, 255, 0.19), 0 0 12px 4px rgba(255, 255, 255, 0.08);

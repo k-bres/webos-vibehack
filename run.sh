@@ -6,9 +6,10 @@ PASS="$(bashio::config passphrase)"
 export TV_HOST
 cd /opt/tv
 
-# The launcher config is editable from HA, in /addon_configs/<id>_webos_vibehack/config.js.
+# The launcher config is editable from HA, in /addon_configs/<id>_webos_vibehack/config.js;
+# images put next to it (input tile icons) are bundled too.
 [ -f /config/config.js ] || cp app/config.js /config/config.js
-cp /config/config.js app/config.js
+cp -r /config/. app/
 
 # Developer Mode SSH key, fetched once: the Key Server switch must be on in the Developer Mode app.
 if [ ! -s ~/.ssh/lgtv_webos ]; then

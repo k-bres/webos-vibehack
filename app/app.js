@@ -8,10 +8,16 @@
   'use strict';
 
   var COLUMNS = Math.max(1, CONFIG.columns || 4);
-  var TILE_W = 360, TILE_H = 202;
   var CELL_W = (1920 - 2 * 112) / COLUMNS;
-  var ROW_PITCH = 292;
-  var DOCK_TOP = 708;           // tile top of the dock row: next row peeks in at the bottom
+  // 360x202 tiles at 4 columns; more columns shrink them, keeping a 48px gap (the focused tile
+  // and its glass grow about 24px each side, so less would overlap the neighbours).
+  var TILE_W = Math.min(360, Math.round(CELL_W - 48)), TILE_H = Math.round(TILE_W * 202 / 360);
+  var ROW_PITCH = TILE_H + 90;
+  var DOCK_TOP = 910 - TILE_H;  // tile top of the dock row: next row peeks in at the bottom
+  var rootStyle = document.documentElement.style;
+  rootStyle.setProperty('--tile-w', TILE_W + 'px');
+  rootStyle.setProperty('--tile-h', TILE_H + 'px');
+  rootStyle.setProperty('--tile-r', Math.round(TILE_W * 32 / 360) + 'px');
   var DOCK_GAP = 36;            // extra space below the dock
   var FOCUS_SCALE = 1.1;
   var GLASS_PAD = 12;           // room for the glass glow around the scaled tile
@@ -76,12 +82,34 @@
 
   // ---- apps ----------------------------------------------------------------------------------
 
+  // White glyphs for inputTiles in config.js (Material Icons, Apache 2.0).
+  var INPUT_GLYPHS = {
+    hdmi: ICON_INPUT,
+    pc: 'M20,2H4C2.9,2 2,2.9 2,4v12c0,1.1 0.9,2 2,2h6v2H8v2h8v-2h-2v-2h6c1.1,0 2,-0.9 2,-2V4C22,2.9 21.1,2 20,2zM20,16H4V4h16V16z',
+    console: 'M21.58,16.09l-1.09,-7.66C20.21,6.46 18.52,5 16.53,5H7.47C5.48,5 3.79,6.46 3.51,8.43l-1.09,7.66C2.2,17.63 3.39,19 4.94,19c0.68,0 1.32,-0.27 1.8,-0.75L9,16h6l2.25,2.25c0.48,0.48 1.13,0.75 1.8,0.75c1.56,0 2.75,-1.37 2.53,-2.91zM11,11H9v2H8v-2H6v-1h2V8h1v2h2V11zM15,10c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1s1,0.45 1,1S15.55,10 15,10zM17,13c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1s1,0.45 1,1S17.55,13 17,13z'
+  };
+
+  /** HDMI inputs from CONFIG.inputTiles, as tiles with your own name, glyph or image, and colour. */
+  function inputApps() {
+    var tiles = CONFIG.inputTiles || {};
+    return Object.keys(tiles).map(function (id) {
+      var t = tiles[id], icon = t.icon || 'hdmi';
+      if (INPUT_GLYPHS[icon]) {
+        icon = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" ' +
+          'height="240" viewBox="0 0 24 24"><path fill="#fff" d="' + INPUT_GLYPHS[icon] + '"/></svg>');
+      }
+      return { id: id, title: t.title || id, icon: icon, iconColor: t.color || '#3a3a3c' };
+    });
+  }
+
   function orderedApps() {
-    var all = (window.TV_APPS && TV_APPS.apps) || [];
+    var inputs = inputApps(), isInput = {};
+    inputs.forEach(function (a) { isInput[a.id] = true; });
+    var all = ((window.TV_APPS && TV_APPS.apps) || []).filter(function (a) { return !isInput[a.id]; }).concat(inputs);
     var byId = {};
     all.forEach(function (a) { byId[a.id] = a; });
     var hidden = {};
-    (CONFIG.hiddenApps || []).forEach(function (id) { hidden[id] = true; });
+    (CONFIG.hiddenApps || []).forEach(function (id) { if (!isInput[id]) hidden[id] = true; });
     var byTitle = function (a, b) { return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1; };
 
     // An order arranged on the TV wins, until dockApps in config.js changes.
@@ -587,14 +615,17 @@
 
   // ---- lifecycle -----------------------------------------------------------------------------
 
-  /** Back from another app (or opened again from the shortcut): replay the entrance, keep the tile. */
+  /**
+   * Back from another app (or Home, via home-watch.py): show everything at once, keep the tile.
+   * Replaying the staggered entrance here made the launcher look up to a second slower.
+   */
   function resume() {
     if (editing) finishEdit(false);
     updateClock();
     if (zone === 'inputs') panel.classList.add('hidden');
     pills.forEach(function (p) { p.classList.remove('focused'); });
     zone = 'none';
-    animateIn();
+    items.forEach(function (it) { it.el.classList.add('shown'); });
     focusTile(focused);
   }
 

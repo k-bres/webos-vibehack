@@ -13,6 +13,13 @@ window.CONFIG = {
     'shortcutcopilot'             // Copilot
   ],
 
+  // HDMI inputs shown as tiles too. icon: 'pc', 'console', 'hdmi' (the default), or an image put
+  // next to this file (e.g. 'pc.png'). Add the id to dockApps to pin it to the dock.
+  inputTiles: {
+    // 'com.webos.app.hdmi1': { title: 'PC', icon: 'pc', color: '#0a84ff' },
+    // 'com.webos.app.hdmi2': { title: 'PlayStation', icon: 'console', color: '#003791' }
+  },
+
   // The Live TV app, offered at the end of the Inputs menu. Leave empty to omit.
   liveTvApp: 'com.webos.app.livetv',
 
