@@ -23,10 +23,26 @@ own settings instead (see [Cleaning up LG's home](#cleaning-up-lgs-home)).
 Nothing is rooted. Developer Mode is LG's official way to install your own apps, firmware updates
 keep working, and deleting the Developer Mode app removes everything.
 
+## Home Assistant add-on
+
+The easiest way: one add-on does the whole setup below, from your Home Assistant box. It installs
+the launcher, keeps the Home button pointed at it and extends the Developer Mode session every week
+(otherwise it expires after 1000 hours). Needs Home Assistant OS or Supervised (add-ons), not HACS.
+
+1. On the TV, set up Developer Mode (step 1 below). Leave **Key Server** on for the first start.
+2. In Home Assistant: **Settings → Add-ons → Add-on Store → ⋮ → Repositories**, add
+   `https://github.com/k-bres/webos-vibehack`, then install **webOS vibehack**.
+3. In its **Configuration** tab, set `tv_host` (the TV's IP) and `passphrase` (from the Developer
+   Mode app). Start it with the TV on, and accept the "allow this device?" prompt on the TV.
+
+**Restart** the add-on to sync after installing or removing apps on the TV. Set
+`install_on_start: false` to only run the Home watcher. Edit the launcher config in
+`/addon_configs/<id>_webos_vibehack/config.js` (File editor or Samba add-on), then restart.
+
 ## Setup
 
-You need a Mac on the same Wi-Fi as the TV, with Node.js (for LG's `ares` CLI, fetched with `npx`)
-and Python 3. The steps are macOS only for now: `install.sh` makes the app icon with `sips`.
+You need a computer (Linux or macOS) on the same Wi-Fi as the TV, with Node.js 20+ (for LG's
+`ares` CLI, fetched with `npx`) and Python 3.
 
 **1. Developer Mode on the TV**
 
@@ -84,7 +100,7 @@ macOS will ask for Local Network access for Python: allow it (System Settings �
 Local Network), or the watcher logs "No route to host". The log is at
 `~/Library/Logs/tv-vibehack-home-watch.log`. A Mac only redirects Home while it's awake and at
 home; for every time, run `python3 home-watch.py 192.168.1.50` on something that's always on, such
-as a Raspberry Pi.
+as a Raspberry Pi, or use the [Home Assistant add-on](#home-assistant-add-on).
 
 ## Using it
 
@@ -131,7 +147,8 @@ For when you do land on it. Names vary a little by webOS version:
 | [`home-watch.py`](home-watch.py) | Sends the Home button to the launcher |
 | [`home-watch-mac.sh`](home-watch-mac.sh) | Runs the watcher as a macOS background service |
 | [`lgtv.py`](lgtv.py) | Pairs with and talks to the TV's remote-control service |
-| [`assets/icon.jpg`](assets/icon.jpg) | The app icon, resized to PNG by `install.sh` |
+| [`assets/icon.jpg`](assets/icon.jpg) | The app icon source (`app/icon.png` and `app/largeIcon.png` are 80 and 130 px copies) |
+| [`config.yaml`](config.yaml), [`Dockerfile`](Dockerfile), [`run.sh`](run.sh), [`repository.yaml`](repository.yaml) | The Home Assistant add-on |
 
 ## Credits
 

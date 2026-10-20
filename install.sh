@@ -21,12 +21,6 @@ PY="${PY:-python3}"
 [ -x venv/bin/python ] && PY=venv/bin/python
 "$PY" sync-apps.py "$TV_HOST"
 
-if [ ! -f app/icon.png ]; then
-  # The webOS app list wants PNG icons: 80px and 130px.
-  sips -s format png -z 80 80 assets/icon.jpg --out app/icon.png >/dev/null
-  sips -s format png -z 130 130 assets/icon.jpg --out app/largeIcon.png >/dev/null
-fi
-
 rm -rf build && mkdir build
 ares package app -o build
 ares install -d "$DEVICE" build/${APP_ID}_*.ipk

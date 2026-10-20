@@ -11,7 +11,7 @@ import sys
 import websockets
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-KEY_FILE = os.path.join(HERE, ".lgtv-key.json")
+KEY_FILE = os.environ.get("LGTV_KEY_FILE") or os.path.join(HERE, ".lgtv-key.json")
 
 # Unsigned on purpose: newer firmware rejects the signed manifest that open-source clients share
 # ("403 Pairing rejected: blacklisted certificate detected") but still accepts an unsigned one.
