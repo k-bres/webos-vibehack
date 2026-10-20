@@ -19,10 +19,10 @@
 
   var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, OK: 13, BACK: 461, ESC: 27 };
 
-  var GREETINGS = [[5, 'Good night'], [12, 'Good morning'], [17, 'Good afternoon'], [22, 'Good evening'], [24, 'Good night']];
-  var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
-    'October', 'November', 'December'];
+  var GREETINGS = [[5, 'Bonne nuit'], [12, 'Bonjour'], [18, 'Bon après-midi'], [22, 'Bonsoir'], [24, 'Bonne nuit']];
+  var DAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  var MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre',
+    'octobre', 'novembre', 'décembre'];
 
   var ICON_INPUT = 'M18,7V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v3H5v6l3,6v3h8v-3l3,-6V7H18zM8,4h8v3h-2V5h-1v2h-2V5h-1v2H8V4z';
   var ICON_LIVETV = 'M21,6h-7.59l3.29,-3.29L16,2l-4,4l-4,-4l-0.71,0.71L10.59,6H3c-1.1,0 -2,0.89 -2,2v12c0,1.1 0.9,2 2,2h18c1.1,0 2,-0.89 2,-2V8C23,6.89 22.1,6 21,6zM21,20H3V8h18V20zM9,10v8l7,-4L9,10z';
@@ -61,7 +61,7 @@
 
   function launch(id, title, params) {
     luna('luna://com.webos.applicationManager/launch', { id: id, params: params || {} }, function (res) {
-      if (res.returnValue === false) toast("Can't open " + (title || id));
+      if (res.returnValue === false) toast("Impossible d'ouvrir " + (title || id));
     });
   }
 
@@ -416,8 +416,7 @@
       if (h < GREETINGS[k][0]) { $('greeting').textContent = GREETINGS[k][1]; break; }
     }
     var m = now.getMinutes();
-    $('clock').textContent = ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m;
-    $('ampm').textContent = h < 12 ? 'am' : 'pm';
+    $('clock').textContent = h + ':' + (m < 10 ? '0' : '') + m;
     $('date').textContent = DAYS[now.getDay()] + '  ' + now.getDate() + ' ' + MONTHS[now.getMonth()];
   }
 
@@ -428,15 +427,15 @@
       var text = 'Wi-Fi';
       if (res.wired && res.wired.state === 'connected') text = 'Ethernet';
       else if (res.wifi && res.wifi.state === 'connected') text = res.wifi.ssid || 'Wi-Fi';
-      else if (res.isInternetConnectionAvailable === false) text = 'Offline';
+      else if (res.isInternetConnectionAvailable === false) text = 'Hors ligne';
       $('wifiLabel').textContent = text;
     });
   }
 
   function activatePill(i) {
     if (i === 0) showInputs();
-    else if (i === 1) launch('com.palm.app.settings', 'Settings', { target: 'network' });
-    else launch('com.palm.app.settings', 'Settings');
+    else if (i === 1) launch('com.palm.app.settings', 'Paramètres', { target: 'network' });
+    else launch('com.palm.app.settings', 'Paramètres');
   }
 
   // ---- inputs dropdown -----------------------------------------------------------------------
@@ -448,9 +447,9 @@
     inputs.forEach(function (inp) { addInputRow(ICON_INPUT, inp.label, inp.appId); });
     if (CONFIG.liveTvApp) {
       if (inputRows.length) panel.appendChild(Object.assign(document.createElement('div'), { className: 'separator' }));
-      addInputRow(ICON_LIVETV, 'Live TV', CONFIG.liveTvApp);
+      addInputRow(ICON_LIVETV, 'TV en direct', CONFIG.liveTvApp);
     }
-    if (!inputRows.length) { toast('No inputs found'); return; }
+    if (!inputRows.length) { toast('Aucune source trouvée'); return; }
 
     // Hang right below the Inputs pill, at least as wide as it.
     var r = pills[0].getBoundingClientRect();
@@ -498,7 +497,7 @@
     editing = { item: it, snapshot: items.slice() };
     it.el.classList.add('moving');
     document.body.classList.add('editing');
-    toast('Arrows to move  ·  OK to place  ·  Back to cancel');
+    toast('Flèches pour déplacer  ·  OK pour placer  ·  Retour pour annuler');
   }
 
   function moveTo(to) {
