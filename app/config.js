@@ -1,5 +1,5 @@
-// Launcher configuration. Edit this file, then run webos-launcher/install.sh.
-// App ids: run `python3 sync-apps.py --list` (or look in app/apps.js after a sync).
+// Launcher configuration. Edit this file, then restart the add-on.
+// App ids: listed in the add-on log at each start.
 window.CONFIG = {
   // Apps pinned to the dock row at the bottom, in this order. Missing apps are skipped.
   dockApps: ['netflix', 'amazon', 'youtube.leanback.v4', 'hotstar'],

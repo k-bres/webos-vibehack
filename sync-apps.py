@@ -2,11 +2,9 @@
 """Fetch the TV's apps, icons and HDMI inputs into app/apps.js and app/icons/.
 
 webOS does not let a third-party app list installed apps, so the launcher reads them from here.
+App ids and titles are printed too (the add-on log), for config.js.
 
-    python3 sync-apps.py 192.168.1.50          # sync
-    python3 sync-apps.py 192.168.1.50 --list   # just print app ids and titles
-
-Needs: pip install websockets
+    python3 sync-apps.py 192.168.1.50
 """
 import asyncio
 import json
@@ -19,7 +17,7 @@ import lgtv
 APP_DIR = os.path.join(lgtv.HERE, "app")
 
 
-async def main(host, list_only):
+async def main(host):
     ws = await lgtv.session(host)
     try:
         points = (await lgtv.call(ws, "ssap://com.webos.applicationManager/listLaunchPoints")).get("launchPoints", [])
@@ -27,10 +25,8 @@ async def main(host, list_only):
     finally:
         await ws.close()
 
-    if list_only:
-        for p in points:
-            print(f'{p["id"]:45} {p["title"]}')
-        return
+    for p in points:
+        print(f'{p["id"]:45} {p["title"]}')
 
     icon_dir = os.path.join(APP_DIR, "icons")
     os.makedirs(icon_dir, exist_ok=True)
@@ -65,8 +61,7 @@ async def main(host, list_only):
 
 
 if __name__ == "__main__":
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    host = args[0] if args else os.environ.get("TV_HOST")
+    host = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("TV_HOST")
     if not host:
-        sys.exit("usage: sync-apps.py <TV IP> [--list]")
-    asyncio.run(main(host, "--list" in sys.argv))
+        sys.exit("usage: sync-apps.py <TV IP>")
+    asyncio.run(main(host))

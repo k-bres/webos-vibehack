@@ -1,6 +1,6 @@
 /*
  * tvOS style home for webOS: black, a pinned dock row, an app grid, and one glass highlight that
- * springs between tiles. A port of the Android launcher in ../../launcher.
+ * springs between tiles. A port of the tv-vibehack Android launcher.
  *
  * webOS does not let third-party apps list installed apps, so sync-apps.py writes them into apps.js.
  */

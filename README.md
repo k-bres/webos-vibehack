@@ -1,157 +1,105 @@
-# webos-vibehack
+# webOS Launcher
 
-An Apple TV-style home screen for LG TVs. It's a webOS port of the launcher from
-[tv-vibehack](https://github.com/Gathin23/tv-vibehack), which does the same for Android TVs.
+Un écran d'accueil façon Apple TV pour les TV LG webOS, installé et piloté par un add-on
+Home Assistant. Le bouton **Home** de la télécommande ouvre ce launcher à la place de l'accueil LG.
 
-![The launcher running on an LG OLED C6](docs/screenshot.jpg)
+![Le launcher sur une LG OLED](docs/screenshot.jpg)
 
-Tested on an LG OLED C6 (OLED55C6XLA, webOS 26, firmware 43.21.79).
+Rien n'est rooté : l'app passe par le **Developer Mode** officiel de LG, les mises à jour firmware
+continuent de fonctionner, et supprimer l'app Developer Mode retire tout.
 
-## What's different from Android
+## Ce que fait l'add-on
 
-webOS is more locked down than Android TV, so three things work differently:
+- Lit les apps, icônes et entrées HDMI de la TV, empaquette le launcher et l'installe.
+- Surveille l'app au premier plan : dès que l'accueil LG apparaît, il ouvre le launcher par-dessus.
+  Appuyer deux fois sur Home en moins de 3 s reste sur l'accueil LG (pour ses menus).
+- Prolonge la session Developer Mode chaque semaine (sinon elle expire après 1000 h), de préférence
+  entre 3 h et 5 h du matin.
 
-| | Android TV | LG webOS |
-|---|---|---|
-| Install | ADB, no account | LG's **Developer Mode** app (free LG developer account) |
-| App list | read on the TV | read from your computer by `sync-apps.py` and bundled in; webOS won't let an app list installed apps |
-| Home button | the launcher *is* Home | webOS always opens LG's home; `home-watch.py`, running on another device, switches straight back (about 0.1 s) |
+Nécessite Home Assistant OS ou Supervised (add-ons), pas HACS.
 
-There's no debloat step: webOS has no ADB-style package disabling. Turn off LG's ads in the TV's
-own settings instead (see [Cleaning up LG's home](#cleaning-up-lgs-home)).
+## Installation
 
-Nothing is rooted. Developer Mode is LG's official way to install your own apps, firmware updates
-keep working, and deleting the Developer Mode app removes everything.
+1. Créer un compte gratuit sur [webostv.developer.lge.com](https://webostv.developer.lge.com).
+2. Sur la TV, installer **Developer Mode** depuis le LG Content Store et se connecter.
+   Activer **Dev Mode Status** (la TV redémarre), rouvrir l'app et activer **Key Server**.
+   Noter l'**adresse IP** et la **Passphrase** affichées.
+3. Dans Home Assistant : **Paramètres → Modules complémentaires → Boutique → ⋮ → Dépôts**, ajouter
+   `https://github.com/k-bres/webos-ha-launcher`, puis installer **webOS Launcher**.
+4. Dans l'onglet **Configuration**, renseigner `tv_host` (IP de la TV) et `passphrase`.
+   Démarrer l'add-on TV allumée et accepter la demande « autoriser cet appareil ? » sur la TV.
 
-## Home Assistant add-on
+Optionnel : sur le launcher, maintenir une touche chiffre de la télécommande pour l'y associer
+(ouverture en un appui, sans passer par l'accueil LG).
 
-The easiest way: one add-on does the whole setup below, from your Home Assistant box. It installs
-the launcher, keeps the Home button pointed at it and extends the Developer Mode session every week
-(otherwise it expires after 1000 hours). Needs Home Assistant OS or Supervised (add-ons), not HACS.
-
-1. On the TV, set up Developer Mode (step 1 below). Leave **Key Server** on for the first start.
-2. In Home Assistant: **Settings → Add-ons → Add-on Store → ⋮ → Repositories**, add
-   `https://github.com/k-bres/webos-vibehack`, then install **webOS vibehack**.
-3. In its **Configuration** tab, set `tv_host` (the TV's IP) and `passphrase` (from the Developer
-   Mode app). Start it with the TV on, and accept the "allow this device?" prompt on the TV.
-
-**Restart** the add-on to sync after installing or removing apps on the TV. Set
-`install_on_start: false` to only run the Home watcher. Edit the launcher config in
-`/addon_configs/<id>_webos_vibehack/config.js` (File editor or Samba add-on), then restart.
-
-## Setup
-
-You need a computer (Linux or macOS) on the same Wi-Fi as the TV, with Node.js 20+ (for LG's
-`ares` CLI, fetched with `npx`) and Python 3.
-
-**1. Developer Mode on the TV**
-
-1. Create a free account at [webostv.developer.lge.com](https://webostv.developer.lge.com).
-2. On the TV, install **Developer Mode** from the LG Content Store and sign in.
-3. Turn on **Dev Mode Status** (the TV restarts), open the app again and turn on **Key Server**.
-   Note the **IP address** and **Passphrase** it shows.
-
-**2. Connect your computer** (once)
-
-```bash
-export TV_HOST=192.168.1.50                       # the IP from the Developer Mode app
-npx -y -p @webos-tools/cli ares-setup-device -a lgtv -i "{'host':'$TV_HOST','port':'9922','username':'prisoner'}"
-npx -y -p @webos-tools/cli ares-novacom --device lgtv --getkey        # type the passphrase
-npx -y -p @webos-tools/cli ares-setup-device -m lgtv -i "{'privatekey':'lgtv_webos','passphrase':'ABC123'}"
-```
-
-**3. Install**
-
-```bash
-git clone https://github.com/OmkarK97/webos-vibehack.git
-cd webos-vibehack
-python3 -m venv venv && venv/bin/pip install websockets
-TV_HOST=192.168.1.50 ./install.sh
-```
-
-The first run shows an "allow this device?" prompt on the TV: accept it. That pairing lets
-`sync-apps.py` read your apps and icons. `install.sh` then packages the app, installs it and opens
-it. Run it again whenever you install or remove apps on the TV.
-
-**4. A one-press shortcut**
-
-With the launcher open, hold a number key on the remote (say **1**) and assign it. From then on,
-holding 1 opens the launcher from anywhere.
-
-## The Home button
-
-webOS hard-wires Home to LG's home, and blocks Developer Mode apps from seeing which app is in front,
-so the TV can't redirect it on its own. [`home-watch.py`](home-watch.py) does it from another
-always-on device on the same network: it watches the TV's foreground app and, the moment LG's home
-appears, opens the launcher on top.
-
-- **Press Home twice** within three seconds to stay on LG's home, for its menus.
-- When the TV powers on to LG's home, it goes to the launcher too.
-- When the watcher isn't running, Home simply opens LG's home as usual.
-
-On a Mac, install it as a background service that starts at login:
-
-```bash
-TV_HOST=192.168.1.50 ./home-watch-mac.sh       # install or update
-./home-watch-mac.sh uninstall                  # remove
-```
-
-macOS will ask for Local Network access for Python: allow it (System Settings → Privacy & Security →
-Local Network), or the watcher logs "No route to host". The log is at
-`~/Library/Logs/tv-vibehack-home-watch.log`. A Mac only redirects Home while it's awake and at
-home; for every time, run `python3 home-watch.py 192.168.1.50` on something that's always on, such
-as a Raspberry Pi, or use the [Home Assistant add-on](#home-assistant-add-on).
-
-## Using it
-
-Same as the [Android launcher](https://github.com/Gathin23/tv-vibehack#the-launcher): a dock of four apps with the focused app's name above it and a glow
-in its colour, the rest of your apps in a grid below, and Inputs (HDMI ports and Live TV), Wi-Fi
-and Settings at the top. The header slides away when the grid scrolls into it.
-
-**Rearrange tiles on the TV**: hold **OK** on a tile until it wiggles, move it with the arrows
-(into the top row puts it in the dock), then **OK** to place it or **Back** to cancel. The order is
-saved on the TV.
-
-**Configure** in [`app/config.js`](app/config.js): the starting dock, apps to hide, the Live TV
-app and the number of columns. App ids come from `venv/bin/python sync-apps.py $TV_HOST --list`.
-Changing `dockApps` resets an order arranged on the TV.
-
-## Cleaning up LG's home
-
-For when you do land on it. Names vary a little by webOS version:
-
-- **Settings → General → System → Additional Settings → Home Settings**: turn off **Home
-  Promotion** and **Content Recommendation**.
-- **Settings → Support → Privacy & Terms → User Agreements**: untick **Viewing Information** and
-  **Interest-Based Recommendations**.
-
-## Troubleshooting
-
-- **Pairing fails with "403 Pairing rejected: blacklisted certificate detected".** Newer firmware
-  rejects the signed manifest that open-source LG clients share. `lgtv.py` pairs with an unsigned
-  one, which still works.
-- **No pairing prompt on the TV.** Turn on the TV's option for connecting from mobile apps (on the
-  C6: Settings → General → Devices → External Devices; named "LG Connect Apps" or similar).
-- **`ares` says "All configured authentication methods failed".** The device profile is missing
-  its key: run the third command in step 2 again.
-- **Apps stop opening after a while.** Developer Mode sessions expire (LG shows the time left in
-  the Developer Mode app; it was 999 hours on our C6). Press **Extend Session Time** there.
-
-## Files
-
-| File | What it does |
+| Option | Rôle |
 |---|---|
-| [`app/`](app/) | The launcher: `index.html`, `style.css`, `app.js`, `config.js`, `appinfo.json` |
-| [`install.sh`](install.sh) | Syncs your apps, packages and installs the launcher, and opens it |
-| [`sync-apps.py`](sync-apps.py) | Reads apps, icons and HDMI inputs from the TV into `app/apps.js` and `app/icons/` |
-| [`home-watch.py`](home-watch.py) | Sends the Home button to the launcher |
-| [`home-watch-mac.sh`](home-watch-mac.sh) | Runs the watcher as a macOS background service |
-| [`lgtv.py`](lgtv.py) | Pairs with and talks to the TV's remote-control service |
-| [`assets/icon.jpg`](assets/icon.jpg) | The app icon source (`app/icon.png` and `app/largeIcon.png` are 80 and 130 px copies) |
-| [`config.yaml`](config.yaml), [`Dockerfile`](Dockerfile), [`run.sh`](run.sh), [`repository.yaml`](repository.yaml) | The Home Assistant add-on |
+| `tv_host` | IP de la TV |
+| `passphrase` | Passphrase de l'app Developer Mode |
+| `install_on_start` | Resynchronise et réinstalle le launcher à chaque démarrage (défaut `true`). Si la TV est éteinte, réessaie toutes les 2 min. |
 
-## Credits
+**Redémarrer** l'add-on après avoir installé ou supprimé des apps sur la TV.
 
-The design, layout and app icon come from [tv-vibehack](https://github.com/Gathin23/tv-vibehack)
-by [Gathin](https://github.com/Gathin23). The Outfit font is under the SIL Open Font License
-([`app/fonts/OFL.txt`](app/fonts/OFL.txt)). MIT licensed, see [`LICENSE`](LICENSE).
+## Configurer le launcher
+
+Le fichier est `/addon_configs/<id>_webos_vibehack/config.js` (add-on File editor ou Samba).
+Il est créé au premier démarrage à partir de [`app/config.js`](app/config.js), puis **n'est plus
+jamais remplacé** : après une mise à jour, les nouvelles options doivent y être ajoutées à la main.
+Redémarrer l'add-on pour appliquer.
+
+| Clé | Rôle |
+|---|---|
+| `dockApps` | Apps épinglées dans le dock, dans l'ordre |
+| `hiddenApps` | Apps jamais affichées |
+| `inputTiles` | Entrées HDMI affichées en tuiles : titre, icône (`pc`, `console`, `hdmi` ou une image posée à côté de `config.js`), couleur |
+| `liveTvApp` | App TV en direct proposée dans le menu Sources (vide pour l'omettre) |
+| `columns` | Tuiles par ligne ; le dock a autant de places (ex. `6` pour 6 apps dans le dock) |
+
+Les ids d'apps sont listés dans le log de l'add-on à chaque démarrage. Modifier `dockApps`
+réinitialise l'ordre arrangé sur la TV.
+
+**Réorganiser sur la TV** : maintenir **OK** sur une tuile jusqu'à ce qu'elle bouge, la déplacer avec
+les flèches (la ligne du haut est le dock), **OK** pour la poser, **Retour** pour annuler.
+
+## Nettoyer l'accueil LG
+
+Pour les moments où on tombe dessus (les noms varient selon la version de webOS) :
+
+- **Paramètres → Général → Système → Paramètres supplémentaires → Paramètres d'accueil** : désactiver
+  la promotion et les recommandations de contenu.
+- **Paramètres → Support → Confidentialité et conditions → Accords utilisateur** : décocher les
+  informations de visionnage et les recommandations basées sur les centres d'intérêt.
+
+## Dépannage
+
+- **« Could not fetch the SSH key »** : activer **Key Server** dans l'app Developer Mode, redémarrer
+  l'add-on.
+- **« 403 Pairing rejected: blacklisted certificate detected »** : les firmwares récents rejettent le
+  manifeste signé partagé par les clients open source ; `lgtv.py` s'appaire avec un manifeste non
+  signé, qui passe.
+- **Pas de demande d'appairage sur la TV** : activer la connexion depuis les apps mobiles
+  (Paramètres → Général → Appareils → Appareils externes, « LG Connect Apps » ou similaire).
+- **Les apps ne s'ouvrent plus** : la session Developer Mode a expiré. **Extend Session Time** dans
+  l'app Developer Mode, puis vérifier que la TV est joignable la nuit (veille réseau).
+- **Mes changements n'apparaissent pas après une mise à jour** : vérifier dans le log que
+  l'installation a réussi, et que les nouvelles options sont bien dans le `config.js` de
+  `/addon_configs` (il n'est pas mis à jour automatiquement).
+
+## Fichiers
+
+| Fichier | Rôle |
+|---|---|
+| [`app/`](app/) | Le launcher (web app webOS) |
+| [`run.sh`](run.sh) | Point d'entrée de l'add-on : clé SSH, installation, prolongation Developer Mode, watcher |
+| [`install.sh`](install.sh) | Synchronise les apps, empaquette et installe le launcher |
+| [`sync-apps.py`](sync-apps.py) | Lit apps, icônes et entrées HDMI de la TV vers `app/apps.js` et `app/icons/` |
+| [`home-watch.py`](home-watch.py) | Renvoie le bouton Home vers le launcher |
+| [`lgtv.py`](lgtv.py) | Appairage et dialogue avec le service de télécommande de la TV |
+| [`config.yaml`](config.yaml), [`Dockerfile`](Dockerfile), [`repository.yaml`](repository.yaml) | Manifeste et image de l'add-on |
+
+## Crédits
+
+Fork de [webos-vibehack](https://github.com/OmkarK97/webos-vibehack), portage webOS de
+[tv-vibehack](https://github.com/Gathin23/tv-vibehack) par [Gathin](https://github.com/Gathin23)
+(design, mise en page, icône). Police Outfit sous SIL Open Font License
+([`app/fonts/OFL.txt`](app/fonts/OFL.txt)). Licence MIT, voir [`LICENSE`](LICENSE).

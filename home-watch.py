@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """Make the Home button open the launcher instead of LG's home.
 
-webOS does not let an app replace Home, or even see which app is in front, so this runs on
-another always-on device on the same network (a Mac, a Raspberry Pi, a phone in Termux). It
-watches the foreground app over the TV's remote-control service and, the moment LG's home
-appears, launches the launcher on top. LG's home shows for about half a second.
+webOS does not let an app replace Home, or even see which app is in front, so this runs in the
+Home Assistant add-on. It watches the foreground app over the TV's remote-control service and,
+the moment LG's home appears, launches the launcher on top.
 
 Press Home twice within ESCAPE_SECONDS to stay on LG's home (for its menus).
 
     python3 home-watch.py 192.168.1.50
-
-Needs: pip install websockets. Pair once first (sync-apps.py does it).
 """
 import asyncio
 import json

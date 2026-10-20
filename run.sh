@@ -7,7 +7,8 @@ export TV_HOST
 cd /opt/tv
 
 # The launcher config is editable from HA, in /addon_configs/<id>_webos_vibehack/config.js;
-# images put next to it (input tile icons) are bundled too.
+# images put next to it (input tile icons) are bundled too. Once created it is never replaced by
+# the repo's default, so new options from an update must be added to it by hand.
 [ -f /config/config.js ] || cp app/config.js /config/config.js
 cp -r /config/. app/
 
@@ -24,8 +25,14 @@ fi
 DEV="{'host':'$TV_HOST','port':'9922','username':'prisoner','privatekey':'lgtv_webos','passphrase':'$PASS'}"
 ares-setup-device -a lgtv -i "$DEV" >/dev/null 2>&1 || ares-setup-device -m lgtv -i "$DEV" >/dev/null
 
+# After an add-on update the TV is often in standby: retry until the new version is installed.
 if bashio::config.true install_on_start; then
-  ./install.sh || bashio::log.warning "Install failed (TV off?). Restart the add-on to retry."
+  (
+    until ./install.sh; do
+      bashio::log.warning "Install failed (TV off?), retrying in 2 minutes."
+      sleep 120
+    done
+  ) &
 fi
 
 # Developer Mode expires after 1000 h. Extend it weekly; the Developer Mode app flashes up, so
